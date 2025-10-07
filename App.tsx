@@ -137,6 +137,40 @@ function App() {
       }
     };
 
+    const handleRegenerateUniverse = async (universe: string) => {
+      if (!uploadedImage) return;
+
+      // Prevent re-triggering if a generation is already in progress
+      if (generatedImages[universe]?.status === 'pending') {
+        return;
+      }
+      
+      console.log(`Regenerating image for ${universe}...`);
+
+      // Set the specific decade to 'pending' to show the loading spinner
+      setGeneratedImages(prev => ({
+        ...prev,
+        [universe]: { status: 'pending' },
+      }));
+
+      // Call the generation service for the specific decade
+      try {
+          const prompt = `Transform the uploaded human face into a cinematic alternate-universe version of themselves while keeping key facial features recognizable. Apply environment-specific lighting, materials, and costume design to reflect each world’s atmosphere. Ensure realistic skin texture, accurate facial geometry retention, and dynamic background composition. The universe name is "${prompts[universe]['name']}" and the universe is like "${prompts[universe]['desc']}".The resulting image should look cinematic, expressive, and visually distinct for each world — a unique “alternate self” that could exist in that timeline.`;
+          const resultUrl = await generateImage(uploadedImage, prompt);
+          setGeneratedImages(prev => ({
+            ...prev,
+            [universe]: { status: 'done', url: resultUrl },
+          }));
+      } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+          setGeneratedImages(prev => ({
+            ...prev,
+            [universe]: { status: 'error', error: errorMessage },
+          }));
+          console.error(`Failed to regenerate image for ${universe}:`, err);
+      }
+    };
+
     const handleDownloadAlbum = async () => {
       setIsDownloading(true);
       try {
@@ -235,6 +269,7 @@ function App() {
                       imageUrl={generatedImages[universe]?.url}
                       error={generatedImages[universe]?.error}
                       onDownload={handleDownloadIndividualImage}
+                      onShake={handleRegenerateUniverse}
                       isMobile={isMobile}
                     />
                   </div>
@@ -265,6 +300,7 @@ function App() {
                         imageUrl={generatedImages[universe]?.url}
                         error={generatedImages[universe]?.error}
                         onDownload={handleDownloadIndividualImage}
+                        onShake={handleRegenerateUniverse}
                         isMobile={isMobile}
                       />
                     </motion.div>
